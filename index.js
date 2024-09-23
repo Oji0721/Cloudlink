@@ -1,5 +1,6 @@
 const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, EmbedBuilder, Partials, Events } = require('discord.js');
 require('dotenv').config();
+require('./voice.js');
 const config = require('./config.json');
 const fs = require('fs');
 const path = require('path');
