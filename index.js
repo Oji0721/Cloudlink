@@ -117,11 +117,11 @@ client.on(Events.ThreadCreate, async (thread) => {
   const parentChannelId = '1286673249245073520';
   if (thread.parentId === parentChannelId) {
     try {
-      const ownerMember = await thread.members.fetch(thread.ownerId);
-      
+      const ownerMember = await thread.guild.members.fetch(thread.ownerId);
+
       if (ownerMember) {
         const hasPriorityRole = ownerMember.roles.cache.some(role => config.priorityRoles.includes(role.id));
-        
+
         if (hasPriorityRole) {
           await thread.setAppliedTags([config.tagIds.priority]);
         }
