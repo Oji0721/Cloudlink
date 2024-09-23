@@ -39,7 +39,7 @@ const rest = new REST({ version: '10' }).setToken(process.env.CLOUDLINK_TOKEN);
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isCommand()) return;
   const { commandName } = interaction;
-  const embed = new EmbedBuilder();
+  const embed = new EmbedBuilder().setColor('#00B4D8');
 
   try {
     if (commandName === 'eval' && interaction.user.id === process.env.OWNER_ID) {
@@ -47,17 +47,17 @@ client.on(Events.InteractionCreate, async (interaction) => {
       try {
         let evalResult = eval(code);
         if (typeof evalResult !== 'string') evalResult = require('util').inspect(evalResult);
-        await interaction.reply({ content: `\`\`\`js\n${evalResult}\`\`\``, ephemeral: true });
+        await interaction.reply({ content: `\`\`\`js\n${evalResult}\n\`\`\``, ephemeral: true });
       } catch (error) {
-        await interaction.reply({ content: `Error: \`\`\`js\n${error}\`\`\``, ephemeral: true });
+        await interaction.reply({ content: `Error: \`\`\`js\n${error}\n\`\`\``, ephemeral: true });
       }
     } else if (commandName === 'rizz') {
       const rizzLine = getRandomRizzLine();
-      embed.setColor('#00FF00').setDescription(rizzLine);
+      embed.setDescription(rizzLine);
       await interaction.reply({ embeds: [embed], ephemeral: false });
     } else if (commandName === 'embed') {
       const text = interaction.options.getString('text');
-      embed.setColor('#00FF00').setDescription(text);
+      embed.setDescription(text.replace(/\\n/g, '\n'));
       await interaction.reply({ content: 'Your embed has been sent!', ephemeral: true });
       await interaction.channel.send({ embeds: [embed] });
     } else {
@@ -103,7 +103,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await interaction.channel.setAppliedTags(tagsToSet);
       if (lockThread) await interaction.channel.setLocked(true);
 
-      embed.setColor('#00FF00');
       await interaction.reply({ embeds: [embed], ephemeral: false });
     }
   } catch (error) {
