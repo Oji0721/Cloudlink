@@ -126,3 +126,5 @@ function getRandomRizzLine() {
   const rizzData = JSON.parse(fs.readFileSync(rizzPath, 'utf-8'));
   return rizzData[Math.floor(Math.random() * rizzData.length)];
 }
+
+client.login(process.env.CLOUDLINK_TOKEN);
