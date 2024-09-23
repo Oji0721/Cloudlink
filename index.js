@@ -1,45 +1,7 @@
-const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, EmbedBuilder, Partials, Events } = require('discord.js');
-require('dotenv').config();
-require('./voice.js');
-const config = require('./config.json');
-const fs = require('fs');
-const path = require('path');
-
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-  ],
-  partials: [Partials.Channel, Partials.Message],
-});
-
-const commands = [
-  new SlashCommandBuilder().setName('inprogress').setDescription('Mark thread as "In Progress"'),
-  new SlashCommandBuilder().setName('completed').setDescription('Mark thread as "Completed"'),
-  new SlashCommandBuilder().setName('cancel').setDescription('Mark thread as "Cancelled"'),
-  new SlashCommandBuilder().setName('onhold').setDescription('Mark thread as "On Hold"'),
-  new SlashCommandBuilder().setName('rizz').setDescription('Generate random pickup line'),
-  new SlashCommandBuilder().setName('embed').setDescription('Send custom embed message').addStringOption(option => option.setName('text').setDescription('Embed text').setRequired(true)),
-  new SlashCommandBuilder().setName('eval').setDescription('Evaluate JavaScript code').addStringOption(option => option.setName('code').setDescription('Code to evaluate').setRequired(true)),
-].map(command => command.toJSON());
-
-const rest = new REST({ version: '10' }).setToken(process.env.CLOUDLINK_TOKEN);
-
-(async () => {
-  try {
-    await rest.put(Routes.applicationCommands(config.clientId), { body: commands });
-    console.log('Successfully reloaded application (/) commands.');
-  } catch (error) {
-    console.error('Error while reloading commands:', error);
-  }
-})();
-
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isCommand()) return;
   const { commandName } = interaction;
-  const embed = new EmbedBuilder().setColor('#00B4D8');
+  const embed = new EmbedBuilder();
 
   try {
     if (commandName === 'eval' && interaction.user.id === process.env.OWNER_ID) {
@@ -47,17 +9,17 @@ client.on(Events.InteractionCreate, async (interaction) => {
       try {
         let evalResult = eval(code);
         if (typeof evalResult !== 'string') evalResult = require('util').inspect(evalResult);
-        await interaction.reply({ content: `\`\`\`js\n${evalResult}\n\`\`\``, ephemeral: true });
+        await interaction.reply({ content: `\`\`\`js\n${evalResult}\`\`\``, ephemeral: true });
       } catch (error) {
-        await interaction.reply({ content: `Error: \`\`\`js\n${error}\n\`\`\``, ephemeral: true });
+        await interaction.reply({ content: `Error: \`\`\`js\n${error}\`\`\``, ephemeral: true });
       }
     } else if (commandName === 'rizz') {
       const rizzLine = getRandomRizzLine();
-      embed.setDescription(rizzLine);
+      embed.setColor('#00B4D8').setDescription(rizzLine);
       await interaction.reply({ embeds: [embed], ephemeral: false });
     } else if (commandName === 'embed') {
       const text = interaction.options.getString('text');
-      embed.setDescription(text.replace(/\\n/g, '\n'));
+      embed.setColor('#00B4D8').setDescription(text);
       await interaction.reply({ content: 'Your embed has been sent!', ephemeral: true });
       await interaction.channel.send({ embeds: [embed] });
     } else {
@@ -74,9 +36,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
         return interaction.reply({ embeds: [embed], ephemeral: true });
       }
 
-      const threadCheck = await interaction.guild.channels.fetch('1286673249245073520');
-      if (!threadCheck || !threadCheck.isThread()) {
-        embed.setColor('#FF0000').setDescription('This command requires a specific thread.');
+      const parentChannelId = '1286673249245073520';
+      if (interaction.channel.parentId !== parentChannelId) {
+        embed.setColor('#FF0000').setDescription('This command can only be used in the correct parent channel.');
         return interaction.reply({ embeds: [embed], ephemeral: true });
       }
 
@@ -103,6 +65,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await interaction.channel.setAppliedTags(tagsToSet);
       if (lockThread) await interaction.channel.setLocked(true);
 
+      embed.setColor('#00B4D8');
       await interaction.reply({ embeds: [embed], ephemeral: false });
     }
   } catch (error) {
@@ -114,16 +77,3 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
   }
 });
-
-process.on('unhandledRejection', (error) => console.error('Unhandled promise rejection:', error));
-process.on('uncaughtException', (error) => console.error('Uncaught exception:', error));
-
-client.once('ready', () => console.log(`Logged in as ${client.user.tag}!`));
-
-function getRandomRizzLine() {
-  const rizzPath = path.join(__dirname, 'rizz.json');
-  const rizzData = JSON.parse(fs.readFileSync(rizzPath, 'utf-8'));
-  return rizzData[Math.floor(Math.random() * rizzData.length)];
-}
-
-client.login(process.env.CLOUDLINK_TOKEN);
