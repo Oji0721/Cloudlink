@@ -113,6 +113,18 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 });
 
+client.on(Events.ThreadCreate, async (thread) => {
+  const parentChannelId = '1286673249245073520';
+  if (thread.parentId === parentChannelId) {
+    const hasPriorityRole = thread.member.roles.cache.some(role => config.priorityRoles.includes(role.id));
+    if (hasPriorityRole) {
+      await thread.setAppliedTags([config.tagIds.priority]);
+    }
+  } else {
+    console.warn('Thread created in the wrong parent channel.');
+  }
+});
+
 process.on('unhandledRejection', (error) => console.error('Unhandled promise rejection:', error));
 process.on('uncaughtException', (error) => console.error('Uncaught exception:', error));
 
