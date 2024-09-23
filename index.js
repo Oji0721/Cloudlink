@@ -131,8 +131,6 @@ client.on(Events.ThreadCreate, async (thread) => {
     } catch (error) {
       console.error('Error fetching thread owner:', error);
     }
-  } else {
-    console.warn('Thread created in the wrong parent channel.');
   }
 });
 
