@@ -116,9 +116,15 @@ client.on(Events.InteractionCreate, async (interaction) => {
 client.on(Events.ThreadCreate, async (thread) => {
   const parentChannelId = '1286673249245073520';
   if (thread.parentId === parentChannelId) {
-    const hasPriorityRole = thread.member.roles.cache.some(role => config.priorityRoles.includes(role.id));
-    if (hasPriorityRole) {
-      await thread.setAppliedTags([config.tagIds.priority]);
+    try {
+      const owner = await thread.fetchOwner();
+      const hasPriorityRole = owner.roles.cache.some(role => config.priorityRoles.includes(role.id));
+      
+      if (hasPriorityRole) {
+        await thread.setAppliedTags([config.tagIds.priority]);
+      }
+    } catch (error) {
+      console.error('Error fetching thread owner:', error);
     }
   } else {
     console.warn('Thread created in the wrong parent channel.');
