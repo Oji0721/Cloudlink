@@ -137,7 +137,7 @@ client.on(Events.ThreadCreate, async (thread) => {
 process.on('unhandledRejection', (error) => console.error('Unhandled promise rejection:', error));
 process.on('uncaughtException', (error) => console.error('Uncaught exception:', error));
 
-client.once('ready', () => console.log(`Logged in as ${client.user.tag}!`));
+client.once(Events.ClientReady, () => console.log(`Logged in as ${client.user.tag}!`));
 
 function getRandomRizzLine() {
   const rizzPath = path.join(__dirname, 'rizz.json');
