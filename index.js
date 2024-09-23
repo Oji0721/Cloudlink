@@ -1,3 +1,41 @@
+const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, EmbedBuilder, Partials, Events } = require('discord.js');
+require('dotenv').config();
+require('./voice.js');
+const config = require('./config.json');
+const fs = require('fs');
+const path = require('path');
+
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+  ],
+  partials: [Partials.Channel, Partials.Message],
+});
+
+const commands = [
+  new SlashCommandBuilder().setName('inprogress').setDescription('Mark thread as "In Progress"'),
+  new SlashCommandBuilder().setName('completed').setDescription('Mark thread as "Completed"'),
+  new SlashCommandBuilder().setName('cancel').setDescription('Mark thread as "Cancelled"'),
+  new SlashCommandBuilder().setName('onhold').setDescription('Mark thread as "On Hold"'),
+  new SlashCommandBuilder().setName('rizz').setDescription('Generate random pickup line'),
+  new SlashCommandBuilder().setName('embed').setDescription('Send custom embed message').addStringOption(option => option.setName('text').setDescription('Embed text').setRequired(true)),
+  new SlashCommandBuilder().setName('eval').setDescription('Evaluate JavaScript code').addStringOption(option => option.setName('code').setDescription('Code to evaluate').setRequired(true)),
+].map(command => command.toJSON());
+
+const rest = new REST({ version: '10' }).setToken(process.env.CLOUDLINK_TOKEN);
+
+(async () => {
+  try {
+    await rest.put(Routes.applicationCommands(config.clientId), { body: commands });
+    console.log('Successfully reloaded application (/) commands.');
+  } catch (error) {
+    console.error('Error while reloading commands:', error);
+  }
+})();
+
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isCommand()) return;
   const { commandName } = interaction;
@@ -31,15 +69,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
         return interaction.reply({ embeds: [embed], ephemeral: true });
       }
 
-      if (['inprogress', 'completed', 'cancel', 'onhold'].includes(commandName) && !interaction.channel.isThread()) {
-        embed.setColor('#FF0000').setDescription('This command can only be used in a thread.');
-        return interaction.reply({ embeds: [embed], ephemeral: true });
-      }
-
-      const parentChannelId = '1286673249245073520';
-      if (interaction.channel.parentId !== parentChannelId) {
-        embed.setColor('#FF0000').setDescription('This command can only be used in the correct parent channel.');
-        return interaction.reply({ embeds: [embed], ephemeral: true });
+      if (['inprogress', 'completed', 'cancel', 'onhold'].includes(commandName)) {
+        const parentChannelId = '1286673249245073520';
+        if (interaction.channel.parentId !== parentChannelId) {
+          embed.setColor('#FF0000').setDescription('This command can only be used in the correct parent channel.');
+          return interaction.reply({ embeds: [embed], ephemeral: true });
+        }
       }
 
       let tagToAdd, lockThread = false;
@@ -77,3 +112,16 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
   }
 });
+
+process.on('unhandledRejection', (error) => console.error('Unhandled promise rejection:', error));
+process.on('uncaughtException', (error) => console.error('Uncaught exception:', error));
+
+client.once('ready', () => console.log(`Logged in as ${client.user.tag}!`));
+
+function getRandomRizzLine() {
+  const rizzPath = path.join(__dirname, 'rizz.json');
+  const rizzData = JSON.parse(fs.readFileSync(rizzPath, 'utf-8'));
+  return rizzData[Math.floor(Math.random() * rizzData.length)];
+}
+
+client.login(process.env.CLOUDLINK_TOKEN);
