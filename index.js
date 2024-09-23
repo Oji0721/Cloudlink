@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, EmbedBuilder, Partials, Events } = require('discord.js');
+const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, EmbedBuilder, Partials, Events, GuildMember } = require('discord.js');
 require('dotenv').config();
 require('./voice.js');
 const config = require('./config.json');
@@ -118,10 +118,15 @@ client.on(Events.ThreadCreate, async (thread) => {
   if (thread.parentId === parentChannelId) {
     try {
       const owner = await thread.fetchOwner();
-      const hasPriorityRole = owner.roles.cache.some(role => config.priorityRoles.includes(role.id));
       
-      if (hasPriorityRole) {
-        await thread.setAppliedTags([config.tagIds.priority]);
+      if (owner && owner instanceof GuildMember) {
+        const hasPriorityRole = owner.roles.cache.some(role => config.priorityRoles.includes(role.id));
+        
+        if (hasPriorityRole) {
+          await thread.setAppliedTags([config.tagIds.priority]);
+        }
+      } else {
+        console.warn('Thread owner is not a guild member.');
       }
     } catch (error) {
       console.error('Error fetching thread owner:', error);
